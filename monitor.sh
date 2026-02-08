@@ -10,9 +10,16 @@ ENABLE_LOGGING=true
 load_config() {
     if [ -f "$CONFIG_FILE" ]; then
         source "$CONFIG_FILE"
-    else
-        echo "Warning: Config file not found ($CONFIG_FILE), using default thresholds."
     fi
+}
+
+validate_config() {
+    for var in CPU_THRESHOLD MEM_THRESHOLD DISK_THRESHOLD; do
+        if ! [[ "${!var}" =~ ^[0-9]+$ ]]; then
+            echo "Invalid value for $var: ${!var}"
+            exit 1
+        fi
+    done
 }
 
 for arg in "$@"; do
@@ -21,23 +28,29 @@ for arg in "$@"; do
             ENABLE_LOGGING=false
             ;;
         --config)
-            shift
-            CONFIG_FILE="$1"
-            ;;
-        --help | -h)
-            echo "Usage: $0 [--no-log] [--config FILE]"
-            echo "  --no-log  Disable logging to file"
-            echo "  --config  Specify a custom configuration file"
+            CONFIG_FILE="$2"
             exit 0
             ;;
-        *)
-            echo "Unknown option: $arg"
-            exit 1
+        --generate-config)
+            cat <<EOF > monitor.conf
+CPU_THRESHOLD=80
+MEM_THRESHOLD=80
+DISK_THRESHOLD=90
+EOF
+            exit 0
+            ;;
+        --help | -h)
+            echo "Usage: $0 [--no-log] [--config FILE] [--generate-config]"
+            echo "  --no-log  Disable logging to file"
+            echo "  --config  Specify a custom configuration file"
+            echo "  --generate-config generates a sample config file"
+            exit 0
             ;;
     esac
 done
 
 load_config
+validate_config
 
 timestamp() {
     date "+%Y-%m-%d %H:%M:%S"
