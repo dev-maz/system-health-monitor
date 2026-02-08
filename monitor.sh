@@ -5,6 +5,26 @@ CPU_THRESHOLD=80
 MEM_THRESHOLD=80
 DISK_THRESHOLD=90
 
+ENABLE_LOGGING=true
+LOG_STATUS="LOGGING=ON"
+
+for arg in "$@"; do
+    case "$arg" in
+        --no-log)
+            ENABLE_LOGGING=false
+            ;;
+        --help | -h)
+            echo "Usage: $0 [--no-log]"
+            echo "  --no-log  Disable logging to file"
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $arg"
+            exit 1
+            ;;
+    esac
+done
+
 timestamp() {
     date "+%Y-%m-%d %H:%M:%S"
 }
@@ -29,11 +49,15 @@ log_health() {
 
     (( ${CPU%.*} > CPU_THRESHOLD )) && WARNINGS+=" CPU_HIGH"
     (( ${MEM%.*} > MEM_THRESHOLD )) && WARNINGS+=" MEM_HIGH"
-    (( DISK > DISK_THRESHOLD )) && WARNINGS+=" DISK_HIGH"
+    (( $DISK > DISK_THRESHOLD )) && WARNINGS+=" DISK_HIGH"
+    [ "$ENABLE_LOGGING" = false ] && LOG_STATUS="LOGGING=OFF"
 
-    OUTPUT="$(timestamp) | CPU: ${CPU}% | MEM: ${MEM}% | DISK: ${DISK}% ${WARNINGS}"
+    OUTPUT="$(timestamp) | CPU: ${CPU}% | MEM: ${MEM}% | DISK: ${DISK}% | ${LOG_STATUS} ${WARNINGS}"
+
     echo "$OUTPUT"
+    if [ "$ENABLE_LOGGING" = true ]; then
     echo "$OUTPUT" >> "$LOG_FILE"
+    fi
 }
 
 log_health
