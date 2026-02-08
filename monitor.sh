@@ -4,17 +4,30 @@ LOG_FILE="./health.log"
 CPU_THRESHOLD=80
 MEM_THRESHOLD=80
 DISK_THRESHOLD=90
-
+CONFIG_FILE="./monitor.conf"
 ENABLE_LOGGING=true
+
+load_config() {
+    if [ -f "$CONFIG_FILE" ]; then
+        source "$CONFIG_FILE"
+    else
+        echo "Warning: Config file not found ($CONFIG_FILE), using default thresholds."
+    fi
+}
 
 for arg in "$@"; do
     case "$arg" in
         --no-log)
             ENABLE_LOGGING=false
             ;;
+        --config)
+            shift
+            CONFIG_FILE="$1"
+            ;;
         --help | -h)
-            echo "Usage: $0 [--no-log]"
+            echo "Usage: $0 [--no-log] [--config FILE]"
             echo "  --no-log  Disable logging to file"
+            echo "  --config  Specify a custom configuration file"
             exit 0
             ;;
         *)
@@ -23,6 +36,8 @@ for arg in "$@"; do
             ;;
     esac
 done
+
+load_config
 
 timestamp() {
     date "+%Y-%m-%d %H:%M:%S"
